@@ -1,0 +1,86 @@
+///////////////////////////////////////////////////////////////////////////////
+// Αρχείο - επικεφαλίδα για το module Serial.c
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef _SERIAL_H_
+#define _SERIAL_H_
+
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <avr/io.h>
+#include <avr/builtins.h>
+#include <avr/interrupt.h>
+#include <avr/wdt.h>
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Δηλώσεις τύπων δεδομένων και μακροεντολών.
+////////////////////////////////////////////////////////////////////////////////
+
+#define _BV(bit) (1 << (bit))
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Κάποια βολικά renames.
+////////////////////////////////////////////////////////////////////////////////
+
+#define cpu_irq_disable()		cli()
+#define cpu_irq_enable()		sei()
+#define nop()					__asm__ __volatile__("nop")
+#define MIN(X,Y)				((X) < (Y) ? (X) : (Y))
+#define MAX(X,Y)				((X) > (Y) ? (X) : (Y))
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Ο κώδικας του ASF που χρησιμοποιείται για αποθήκευση και επαναφορά της
+// κατάστασης των interrupts.
+////////////////////////////////////////////////////////////////////////////////
+
+typedef uint8_t irqflags_t;
+
+static inline irqflags_t cpu_irq_save(void)
+{
+	irqflags_t flags = SREG;
+	cpu_irq_disable();
+	return flags;
+}
+
+static inline void cpu_irq_restore(irqflags_t flags)
+{
+	// Οδηγία προς τον compiler να μην αναμίξει εντολές πριν και μετά από την οδηγία
+	// για λόγους optimization.
+	asm volatile("" ::: "memory");
+	SREG = flags;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Σταθερές για το τρέχον module.
+///////////////////////////////////////////////////////////////////////////////
+
+#define SERIAL_INPUT_BUFFER_SIZE	50
+#define SERIAL_OUTPUT_BUFFER_SIZE	200
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Global μεταβλητές του παρόντος module που πρέπει να είναι προσπελάσιμες
+// και από άλλα modules.
+///////////////////////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Συναρτήσεις σειριακής επικοινωνίας.
+///////////////////////////////////////////////////////////////////////////////
+
+void SerialInitialize(uint16_t p_rUbrr);
+bool SerialReadData(uint8_t *p_tpData);
+void SerialWriteData(uint8_t *p_tpData, uint8_t p_tDataLength);
+void SerialWriteByte(uint8_t p_tData);
+uint16_t SerialGetOutputBufferFreeSpace();
+void SerialClearInputBuffer();
+void SerialClearOutputBuffer();
+bool SerialIsTransmitionComplete();
+
+
+#endif // _SERIAL_H_
+
